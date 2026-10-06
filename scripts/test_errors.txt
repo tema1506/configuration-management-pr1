@@ -1,0 +1,6 @@
+# тест обработки ошибок
+cat nonexistent.txt
+cd /no/such/path
+unknown_command
+ls /no/such/path
+exit
