@@ -1,3 +1,5 @@
+"""Виртуальная файловая система, загружаемая из директории."""
+
 import os
 
 
@@ -41,19 +43,43 @@ class VFS:
         for entry in entries:
             full_path = os.path.join(fs_path, entry)
             if os.path.isdir(full_path):
-                child = VFSNode(entry, is_dir=True)
-                child.parent = node
-                node.children[entry] = child
-                self._load_recursive(full_path, child)
+                self._load_directory(full_path, entry, node)
             else:
-                try:
-                    with open(full_path, "r", encoding="utf-8", errors="replace") as f:
-                        content = f.read()
-                except Exception:
-                    content = ""
-                child = VFSNode(entry, is_dir=False, content=content)
-                child.parent = node
-                node.children[entry] = child
+                self._load_file(full_path, entry, node)
+
+    def _load_directory(self, full_path, name, parent):
+        child = VFSNode(name, is_dir=True)
+        child.parent = parent
+        parent.children[name] = child
+        self._load_recursive(full_path, child)
+
+    def _load_file(self, full_path, name, parent):
+        try:
+            with open(
+                full_path,
+                "r",
+                encoding="utf-8",
+                errors="replace"
+            ) as file:
+                content = file.read()
+        except Exception:
+            content = ""
+
+        child = VFSNode(name, is_dir=False, content=content)
+        child.parent = parent
+        parent.children[name] = child
+
+    def _step_into(self, node, part):
+        """Переходит на одну часть пути, возвращает узел или None."""
+        if part == "..":
+            if node.parent:
+                return node.parent
+            return node
+        if part == ".":
+            return node
+        if part not in node.children:
+            return None
+        return node.children[part]
 
     def resolve_path(self, path):
         """Возвращает узел по пути или None, если путь не существует."""
@@ -62,20 +88,13 @@ class VFS:
 
         if path.startswith("/"):
             node = self.root
-            parts = [p for p in path.split("/") if p]
         else:
             node = self.current
-            parts = [p for p in path.split("/") if p]
 
+        parts = [p for p in path.split("/") if p]
         for part in parts:
-            if part == "..":
-                if node.parent:
-                    node = node.parent
-            elif part == ".":
-                continue
-            else:
-                if part not in node.children:
-                    return None
-                node = node.children[part]
+            node = self._step_into(node, part)
+            if node is None:
+                return None
 
         return node
