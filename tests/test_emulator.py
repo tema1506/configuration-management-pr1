@@ -1,9 +1,13 @@
+"""Тесты эмулятора оболочки."""
+
 import os
 import sys
 
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+HERE = os.path.dirname(__file__)
+ROOT = os.path.abspath(os.path.join(HERE, ".."))
+sys.path.insert(0, ROOT)
 
 from src.vfs import VFS
 from src.parser import parse
@@ -14,21 +18,23 @@ def test_parse_simple():
 
 
 def test_parse_quotes():
-    assert parse('cat "file with spaces.txt"') == ["cat", "file with spaces.txt"]
+    result = parse('cat "file with spaces.txt"')
+    assert result == ["cat", "file with spaces.txt"]
 
 
 def test_vfs_load_minimal():
     vfs = VFS()
-    path = os.path.join(os.path.dirname(__file__), "..", "test_vfs", "minimal")
+    path = os.path.join(ROOT, "test_vfs", "minimal")
     vfs.load_from_directory(path)
     assert "readme.txt" in vfs.root.children
 
 
 def test_vfs_resolve():
     vfs = VFS()
-    path = os.path.join(os.path.dirname(__file__), "..", "test_vfs", "deep")
+    path = os.path.join(ROOT, "test_vfs", "deep")
     vfs.load_from_directory(path)
-    node = vfs.resolve_path("/dir1/dir2/dir3/deep_file.txt")
+    target = "/dir1/dir2/dir3/deep_file.txt"
+    node = vfs.resolve_path(target)
     assert node is not None
     assert node.is_dir is False
     assert "Глубокий файл" in node.content
