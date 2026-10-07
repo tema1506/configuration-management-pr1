@@ -1,3 +1,5 @@
+"""Реализация команд эмулятора оболочки."""
+
 from src.vfs import VFSNode
 
 
@@ -7,7 +9,10 @@ def cmd_ls(emulator, args):
     node = emulator.vfs.resolve_path(path)
 
     if node is None:
-        print(f"ls: невозможно получить доступ к '{path}': Нет такого файла или каталога")
+        print(
+            f"ls: невозможно получить доступ к '{path}': "
+            f"Нет такого файла или каталога"
+        )
         return
 
     if not node.is_dir:
@@ -84,25 +89,45 @@ def cmd_mkdir(emulator, args):
         return
 
     for path in args:
-        if "/" in path:
-            parent_path, name = path.rsplit("/", 1)
-            if not parent_path:
-                parent_path = "/"
-        else:
-            parent_path = "."
-            name = path
-
-        parent = emulator.vfs.resolve_path(parent_path)
+        parent, name = _split_mkdir_path(emulator, path)
         if parent is None:
-            print(f"mkdir: невозможно создать '{path}': Нет такого файла или каталога")
             continue
-        if not parent.is_dir:
-            print(f"mkdir: невозможно создать '{path}': Не директория")
-            continue
-        if name in parent.children:
-            print(f"mkdir: невозможно создать '{path}': Файл существует")
+
+        if not _validate_mkdir(parent, name, path):
             continue
 
         new_dir = VFSNode(name, is_dir=True)
         new_dir.parent = parent
         parent.children[name] = new_dir
+
+
+def _split_mkdir_path(emulator, path):
+    """Разбирает путь для mkdir на родителя и имя."""
+    if "/" in path:
+        parent_path, name = path.rsplit("/", 1)
+        if not parent_path:
+            parent_path = "/"
+    else:
+        parent_path = "."
+        name = path
+
+    parent = emulator.vfs.resolve_path(parent_path)
+    if parent is None:
+        print(
+            f"mkdir: невозможно создать '{path}': "
+            f"Нет такого файла или каталога"
+        )
+        return None, None
+
+    return parent, name
+
+
+def _validate_mkdir(parent, name, path):
+    """Проверяет, можно ли создать директорию."""
+    if not parent.is_dir:
+        print(f"mkdir: невозможно создать '{path}': Не директория")
+        return False
+    if name in parent.children:
+        print(f"mkdir: невозможно создать '{path}': Файл существует")
+        return False
+    return True
