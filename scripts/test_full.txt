@@ -1,0 +1,12 @@
+# полный тест всех команд
+ls
+cd dir1
+ls
+cd dir2
+ls
+cd dir3
+cat deep_file.txt
+cd /
+mkdir newdir
+ls
+exit
