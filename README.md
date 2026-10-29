@@ -1,99 +1,81 @@
-# Эмулятор оболочки ОС (Вариант 15)
+# Конфигурационное управление
 
-## Общее описание
+Репозиторий содержит решения практических работ по дисциплине «Конфигурационное управление».
 
-Эмулятор командной строки UNIX-подобной ОС с поддержкой виртуальной
-файловой системы. Реализован на Python 3.10+. Поддерживает CLI-интерфейс
-с REPL-циклом, загрузку VFS из директории на диске, стартовые скрипты
-и набор команд: ls, cd, cat, wc, mkdir, exit.
+## Практическая работа №2. Визуализация графа зависимостей (Вариант 15)
 
-Репозиторий: https://github.com/tema1506/configuration-management-pr1
+Инструмент для визуализации графа зависимостей менеджера пакетов. 
+**Вариант 15:** Менеджер пакетов .NET (NuGet). Обход в глубину (DFS) с рекурсией.
 
-## Описание функций и настроек
+### 1. Общее описание
 
-### Параметры командной строки
+CLI-приложение на Python, которое собирает данные о зависимостях пакетов .NET (NuGet), строит граф зависимостей и визуализирует его в формате ASCII-дерева и Mermaid-диаграммы. Поддерживается поиск обратных зависимостей и фильтрация пакетов.
 
-- `--vfs <path>` — обязательный параметр, путь к директории VFS
-- `--script <path>` — опциональный параметр, путь к стартовому скрипту
+### 2. Описание функций и настроек
 
-### Команды эмулятора
+**Параметры командной строки:**
+- `--package` (обязательный) — имя анализируемого пакета.
+- `--repo` (обязательный) — URL-адрес репозитория или путь к файлу тестового репозитория.
+- `--test` — режим тестирования (чтение графа из локального файла).
+- `--ascii` — вывод зависимостей в виде ASCII-дерева.
+- `--filter` — подстрока для фильтрации пакетов (пакеты с этой подстрокой игнорируются).
 
-- `ls [path]` — вывести содержимое директории
-- `cd [path]` — сменить текущую директорию
-- `cat <file> [file...]` — вывести содержимое файлов
-- `wc <file> [file...]` — подсчитать строки, слова и символы
-- `mkdir <dir> [dir...]` — создать директорию (только в памяти)
-- `exit` — завершить работу эмулятора
+**Структура проекта:**
+- `main_pr2.py` — точка входа.
+- `src_pr2/nuget_parser.py` — парсинг .nuspec файлов и тестовых репозиториев.
+- `src_pr2/graph_logic.py` — алгоритм DFS, поиск обратных зависимостей, вывод в ASCII и Mermaid.
+- `test_vfs_pr2/mock_repo.txt` — тестовый репозиторий.
 
-### Модули проекта
+### 3. Сборка и запуск
 
-- `emulator.py` — точка входа, класс ShellEmulator
-- `src/parser.py` — функция parse для разбора строк с поддержкой кавычек
-- `src/vfs.py` — классы VFS и VFSNode, загрузка и разрешение путей
-- `src/commands.py` — реализации всех команд
-- `tests/test_emulator.py` — автотесты
+Требования: Python 3.10+.
 
-## Сборка и запуск
+Запуск в тестовом режиме (с фильтром и ASCII):
 
-Требования: Python 3.10 или новее.
+    python main_pr2.py --package A --repo test_vfs_pr2/mock_repo.txt --test --ascii --filter C
 
-Клонирование:
+Запуск с реальным URL репозитория NuGet:
 
-    git clone https://github.com/tema1506/configuration-management-pr1.git
-    cd configuration-management-pr1
+    python main_pr2.py --package Newtonsoft.Json --repo https://api.nuget.org/v3-flatcontainer
 
-Запуск интерактивно:
+### 4. Примеры использования
 
-    python3 emulator.py --vfs ./test_vfs/minimal
+**Тестовый режим:**
 
-Запуск со стартовым скриптом:
+    $ python main_pr2.py --package A --repo test_vfs_pr2/mock_repo.txt --test --ascii
 
-    python3 emulator.py --vfs ./test_vfs/deep --script ./scripts/test_full.txt
+    --- Параметры запуска ---
+    Пакет: A
+    Репозиторий: test_vfs_pr2/mock_repo.txt
+    Режим тестирования: Да
+    ASCII-вывод: Да
+    Фильтр: None
+    -------------------------
 
-Запуск тестовых сценариев:
+    Сбор данных для 'A'...
+    Всего проанализировано пакетов: 6
 
-    bash run_minimal.sh
-    bash run_full.sh
-    bash run_errors.sh
+    Обратные зависимости для 'A':
+     - G
 
-Запуск автотестов (требуется pytest):
+    ASCII-дерево зависимостей:
+    └── A
+        ├── B
+        │   └── D
+        │       └── F
+        └── C
+            ├── D
+            │   └── F
+            └── E
+                └── F
 
-    pip install pytest
-    pytest tests/
-
-## Примеры использования
-
-Работа с минимальной VFS:
-
-    $ python3 emulator.py --vfs ./test_vfs/minimal
-    [DEBUG] Путь VFS: ./test_vfs/minimal
-    [DEBUG] Путь скрипта: None
-    minimal:/$ ls
-    readme.txt
-    minimal:/$ cat readme.txt
-    Hello, VFS!
-    minimal:/$ wc readme.txt
-    1 2 12 readme.txt
-    minimal:/$ exit
-
-Работа с вложенной VFS и стартовым скриптом:
-
-    $ python3 emulator.py --vfs ./test_vfs/deep --script ./scripts/test_full.txt
-    [DEBUG] Путь VFS: ./test_vfs/deep
-    [DEBUG] Путь скрипта: ./scripts/test_full.txt
-    deep:/$ ls
-    dir1/
-    root_file.txt
-    deep:/$ cd dir1
-    deep:/dir1$ ls
-    dir2/
-    file1.txt
-
-Обработка ошибок:
-
-    several_files:/$ cat nonexistent.txt
-    cat: nonexistent.txt: Нет такого файла или каталога
-    several_files:/$ unknown_command
-    unknown_command: команда не найдена
-    several_files:/$ cd /no/such/path
-    cd: /no/such/path: Нет такого файла или каталога
+    Mermaid-диаграмма:
+    ```mermaid
+    graph TD
+        A --> B
+        A --> C
+        B --> D
+        D --> F
+        C --> D
+        C --> E
+        E --> F
